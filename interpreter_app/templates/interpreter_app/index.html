@@ -1,0 +1,267 @@
+<!-- interpreter_app/templates/interpreter_app/index.html -->
+
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Voice Interpreter for Pandas Commands</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Toastr CSS (Fixed Version) -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.4/toastr.min.css" rel="stylesheet">
+    
+    <!-- Google Fonts for Enhanced Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Fira+Code&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS (if needed) -->
+    <link rel="stylesheet" href="{% static 'interpreter_app/css/styles.css' %}">
+    
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f8f9fa;
+            color: #343a40;
+            padding-top: 56px; /* Added to prevent content hiding behind fixed navbar */
+        }
+        h1, h2, h3, h4 {
+            font-weight: 500;
+        }
+        .navbar {
+            z-index: 1030; /* Ensure navbar stays above other content */
+        }
+        .sidebar {
+            background-color: #343a40;
+            color: #fff;
+            padding: 20px;
+            height: 100%;
+            overflow-y: auto;
+        }
+        .sidebar a {
+            color: #fff;
+            text-decoration: none;
+        }
+        .main-content {
+            padding: 20px;
+            overflow-y: auto;
+            height: 100%;
+        }
+        .history-item {
+            background-color: #495057;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        .history-item h4 {
+            color: #f8f9fa;
+        }
+        pre {
+            background-color: #212529;
+            padding: 10px;
+            border-radius: 5px;
+            color: #f8f9fa;
+            overflow-x: auto;
+        }
+        #generated-code-textarea {
+            font-family: 'Fira Code', monospace;
+            background-color: #212529;
+            color: #f8f9fa;
+            border: none;
+            resize: vertical;
+        }
+        /* Styled Columns and Data Types */
+        .badge-column {
+            margin: 2px;
+        }
+        .table-dtypes th, .table-dtypes td {
+            padding: 0.5rem;
+        }
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+            .main-content {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#"><i class="fas fa-microphone-alt me-2"></i> Voice Interpreter</a>
+        </div>
+    </nav>
+    
+    <div class="container-fluid">
+        <div class="row vh-100">
+            <!-- Left Sidebar -->
+            <aside class="col-md-3 d-none d-md-block sidebar">
+                <section class="upload-section mb-4">
+                    <h2 class="h5 mb-3"><i class="fas fa-upload me-2"></i> Upload Your Data</h2>
+                    <form id="upload-form" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="file-input" class="form-label"><i class="fas fa-file-upload me-2"></i> Choose File</label>
+                            <input type="file" class="form-control" id="file-input" name="file" accept=".csv, .xlsx, .txt">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100"><i class="fas fa-cloud-upload-alt me-2"></i> Upload</button>
+                    </form>
+                </section>
+                
+                <hr class="text-white">
+                
+                <section class="instructions-section">
+                    <h2 class="h5 mb-3"><i class="fas fa-info-circle me-2"></i> Instructions</h2>
+                    <ol class="list-group list-group-numbered">
+                        <li class="list-group-item bg-dark border-secondary text-white"><strong>Upload your data file</strong> on the sidebar.</li>
+                        <li class="list-group-item bg-dark border-secondary text-white"><strong>Enter your command</strong> in natural language (text or voice).</li>
+                        <li class="list-group-item bg-dark border-secondary text-white"><strong>Review and edit the generated Pandas code</strong>.</li>
+                        <li class="list-group-item bg-dark border-secondary text-white"><strong>Execute the code</strong> to see the results.</li>
+                    </ol>
+                </section>
+            </aside>
+            
+            <!-- Main Content -->
+            <main class="col-md-6 main-content">
+                <!-- Metadata Section -->
+                <section id="metadata" class="mb-4 d-none">
+                    <h3 class="h5 mb-3">Data Metadata</h3>
+                    
+                    <!-- Columns Display -->
+                    <!--
+                    <div class="mb-3">
+                        <strong>Columns:</strong>
+                        <div id="columns" class="mt-2"></div>
+                    </div>
+                     -->
+                    <!-- Data Types Display -->
+                    <div class="mb-3">
+                        <!-- <strong>Data Types:</strong> -->
+                        <table class="table table-bordered table-sm data-types-table">
+                            <thead>
+                                <tr id="dtypes-keys">
+                                    <!-- Dynamically populated -->
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr id="dtypes-values">
+                                    <!-- Dynamically populated -->
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Sample Rows Display -->
+                    <div class="mb-3">
+                        <strong>Sample Rows:</strong>
+                        <div id="sample-rows" class="table-responsive"></div>
+                    </div>
+                </section>
+                
+                <!-- Command Section -->
+                <section class="command-section mb-4">
+                    <h2 class="h5 mb-3"><i class="fas fa-terminal me-2"></i> Enter Your Command</h2>
+                    <div class="mb-3">
+                        <div class="btn-group" role="group" aria-label="Input Method">
+                            <input type="radio" class="btn-check" name="input-method" id="input-text" value="text" checked autocomplete="off">
+                            <label class="btn btn-outline-primary" for="input-text"><i class="fas fa-keyboard me-2"></i> Text</label>
+                            
+                            <input type="radio" class="btn-check" name="input-method" id="input-voice" value="voice" autocomplete="off">
+                            <label class="btn btn-outline-primary" for="input-voice"><i class="fas fa-microphone me-2"></i> Voice</label>
+                        </div>
+                    </div>
+                    
+                    <!-- Text Input -->
+                    <div id="text-input" class="mb-3">
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="command-text" placeholder="Enter your command in English">
+                            <button id="generate-code-btn" class="btn btn-success"><i class="fas fa-code me-2"></i> Generate Code</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Voice Input -->
+                    <div id="voice-input" class="d-none">
+                        <div class="mb-3">
+                            <button id="start-record-btn" class="btn btn-warning w-100"><i class="fas fa-microphone me-2"></i> Start Recording</button>
+                        </div>
+                        <div class="mb-3">
+                            <button id="stop-record-btn" class="btn btn-danger w-100" disabled><i class="fas fa-stop me-2"></i> Stop Recording</button>
+                        </div>
+                        <div class="mb-3">
+                            <audio id="audio-playback" controls class="w-100 d-none"></audio>
+                        </div>
+                        <div class="mb-3">
+                            <button id="transcribe-btn" class="btn btn-info w-100 d-none"><i class="fas fa-microphone-alt me-2"></i> Transcribe</button>
+                        </div>
+                    </div>
+                </section>
+                
+                <!-- Command Display Section -->
+                <section id="command-display" class="display-section mb-4 d-none">
+                    <h3 class="h5 mb-3"><i class="fas fa-comment-dots me-2"></i> Your Command:</h3>
+                    <p id="command-text-display" class="p-3 bg-light rounded"></p>
+                </section>
+                
+                <!-- Generated Code Section -->
+                <section id="generated-code-section" class="display-section mb-4 d-none">
+                    <h3 class="h5 mb-3"><i class="fas fa-code me-2"></i> Generated Pandas Code:</h3>
+                    <div class="mb-3">
+                        <textarea id="generated-code-textarea" class="form-control" rows="10"></textarea>
+                    </div>
+                    <button id="execute-code-btn" class="btn btn-danger w-100"><i class="fas fa-play me-2"></i> Execute Code</button>
+                </section>
+                
+                <!-- Execution Result Section -->
+                <section id="execution-result" class="display-section mb-4 d-none">
+                    <h3 class="h5 mb-3"><i class="fas fa-chart-line me-2"></i> Result:</h3>
+                    <div id="result-content" class="p-3 bg-light rounded"></div>
+                </section>
+            </main>
+            
+            <!-- Right Sidebar -->
+            <aside class="col-md-3 d-none d-md-block sidebar">
+                <section id="history-section" class="history-section d-none">
+                    <h2 class="h5 mb-3 d-flex justify-content-between align-items-center">
+                        <span><i class="fas fa-history me-2"></i> History</span>
+                        <!-- Delete History Button -->
+                        <button id="delete-history-btn" class="btn btn-sm btn-danger"><i class="fas fa-trash me-2"></i> Delete</button>
+                    </h2>
+                    <div id="history-list" class="history-list"></div>
+                </section>
+            </aside>
+        </div>
+    </div>
+    
+    <!-- jQuery (Required by Toastr 2.1.4) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Toastr JS (Fixed Version) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.4/toastr.min.js"></script>
+    
+    <!-- Toastr Initialization and Test Notification -->
+    <script>
+        // Toastr Configuration
+        toastr.options = {
+            "closeButton": true,
+            "progressBar": true,
+            "positionClass": "toast-top-right",
+            "timeOut": "2000"
+        };
+
+    </script>
+    
+    <!-- Custom JS -->
+    <script src="{% static 'interpreter_app/js/audio_recorder.js' %}"></script>
+</body>
+</html>

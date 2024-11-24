@@ -1,0 +1,10 @@
+/* Custom CSS overrides and additional styles */
+
+body {
+    font-family: 'Roboto', sans-serif;
+}
+
+#generated-code-textarea {
+    /* Ensures the textarea has a consistent appearance */
+    resize: vertical;
+}
