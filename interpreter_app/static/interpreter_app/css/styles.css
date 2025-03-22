@@ -1,10 +1,73 @@
-/* Custom CSS overrides and additional styles */
-
 body {
     font-family: 'Roboto', sans-serif;
 }
 
 #generated-code-textarea {
-    /* Ensures the textarea has a consistent appearance */
     resize: vertical;
+}
+
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #f8f9fa;
+    color: #343a40;
+    padding-top: 56px; 
+}
+h1, h2, h3, h4 {
+    font-weight: 500;
+}
+.navbar {
+    z-index: 1030; 
+}
+.sidebar {
+    background-color: #343a40;
+    color: #fff;
+    padding: 20px;
+    height: 100%;
+    overflow-y: auto;
+}
+.sidebar a {
+    color: #fff;
+    text-decoration: none;
+}
+.main-content {
+    padding: 20px;
+    overflow-y: auto;
+    height: 100%;
+}
+.history-item {
+    background-color: #495057;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+.history-item h4 {
+    color: #f8f9fa;
+}
+pre {
+    background-color: #212529;
+    padding: 10px;
+    border-radius: 5px;
+    color: #f8f9fa;
+    overflow-x: auto;
+}
+#generated-code-textarea {
+    font-family: 'Fira Code', monospace;
+    background-color: #212529;
+    color: #f8f9fa;
+    border: none;
+    resize: vertical;
+}
+.badge-column {
+    margin: 2px;
+}
+.table-dtypes th, .table-dtypes td {
+    padding: 0.5rem;
+}
+@media (max-width: 768px) {
+    .sidebar {
+        display: none;
+    }
+    .main-content {
+        padding: 15px;
+    }
 }
