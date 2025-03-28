@@ -4,8 +4,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const generatedCodeSection = document.getElementById('generated-code-section');
     const generatedCodeTextarea = document.getElementById('generated-code-textarea');
     const executeCodeBtn = document.getElementById('execute-code-btn');
-    const executionResult = document.getElementById('execution-result');
-    const resultContent = document.getElementById('result-content');
+    const responseMessageSection = document.getElementById('response-message'); // new response message section
     const generateCodeBtn = document.getElementById('generate-code-btn');
 
     // Input method selection
@@ -35,6 +34,7 @@ document.addEventListener('DOMContentLoaded', function() {
         commandDisplay.classList.remove('d-none');
         generateCode(command);
     });
+    
 
     // Listen for transcribed command from audio recorder
     document.addEventListener('audioTranscribed', function(e) {
@@ -57,9 +57,22 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
-                console.log('Code generated:', data.code);
-                generatedCodeTextarea.value = data.code;
-                generatedCodeSection.classList.remove('d-none');
+                console.log('Response received:', data);
+                if (data.code) {
+                    generatedCodeTextarea.value = data.code;
+                    generatedCodeSection.classList.remove('d-none');
+                }
+                if (data.message) {
+                    responseMessageSection.textContent = data.message;
+                    responseMessageSection.classList.remove('d-none');
+                }
+                // Play the audio automatically if available
+                if (data.audio) {
+                    const audioSrc = "data:audio/mpeg;base64," + data.audio;
+                    const audio = new Audio(audioSrc);
+                    audio.play().catch(error => console.error("Audio playback failed:", error));
+                }
+                
             } else {
                 toastr.error(`Code Generation Error: ${data.message}`);
             }
@@ -69,6 +82,8 @@ document.addEventListener('DOMContentLoaded', function() {
             toastr.error(`Error: ${error}`);
         });
     }
+    
+    
 
     executeCodeBtn.addEventListener('click', () => {
         const code = generatedCodeTextarea.value.trim();
@@ -105,30 +120,25 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     function displayResult(result) {
+        const executionResult = document.getElementById('execution-result');
+        const resultContent = document.getElementById('result-content');
         executionResult.classList.remove('d-none');
-        
         resultContent.innerHTML = "";
-
-        // If you want consistent multi-object display:
         if (result.type === 'multi' && Array.isArray(result.data)) {
             let multiHTML = '';
             result.data.forEach(item => {
                 multiHTML += renderItem(item);
             });
             resultContent.innerHTML = multiHTML;
-
         } else {
-            // Single-object fallback
             resultContent.innerHTML = renderItem(result);
         }
     }
 
     function renderItem(item) {
-        // Returns an HTML string for each item
         let content = '';
         switch (item.type) {
             case 'table':
-                // item.data is JSON of DF with orient="split"
                 const df = JSON.parse(item.data);
                 content += '<table class="table table-bordered table-hover"><thead><tr>';
                 df.columns.forEach(col => {
@@ -145,11 +155,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 content += '</tbody></table>';
                 break;
             case 'plot':
-                // item.data is base64 string
                 content += `<img src="data:image/png;base64,${item.data}" class="img-fluid" alt="Plot">`;
                 break;
             case 'plotly':
-                // item.data is the HTML snippet for the figure
                 content += `<div>${item.data}</div>`;
                 break;
             case 'text':

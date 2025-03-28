@@ -13,3 +13,4 @@ urlpatterns = [
     path('get_history/', views.get_history, name='get_history'),
     path('delete_history/', views.delete_history, name='delete_history'),
 ]
+
