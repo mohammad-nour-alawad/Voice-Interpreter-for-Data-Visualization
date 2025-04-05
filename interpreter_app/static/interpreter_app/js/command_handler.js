@@ -6,7 +6,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const executeCodeBtn = document.getElementById('execute-code-btn');
     const responseMessageSection = document.getElementById('response-message'); // new response message section
     const generateCodeBtn = document.getElementById('generate-code-btn');
+    
+    const dtypesKeysRow = document.getElementById('dtypes-keys');
+    const dtypesValuesRow = document.getElementById('dtypes-values');
+    const sampleRowsDiv = document.getElementById('sample-rows');
+    const metadataDiv = document.getElementById('metadata');
 
+    
     // Input method selection
     const inputMethods = document.getElementsByName('input-method');
     const textInputSection = document.getElementById('text-input');
@@ -61,6 +67,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.code) {
                     generatedCodeTextarea.value = data.code;
                     generatedCodeSection.classList.remove('d-none');
+                    
+                    executeCodeBtn.click();
                 }
                 if (data.message) {
                     responseMessageSection.textContent = data.message;
@@ -70,6 +78,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.audio) {
                     const audioSrc = "data:audio/mpeg;base64," + data.audio;
                     const audio = new Audio(audioSrc);
+                    audio.playbackRate = 1.3;
                     audio.play().catch(error => console.error("Audio playback failed:", error));
                 }
                 
@@ -92,8 +101,6 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
     
-        console.log('Executing Code:', code);
-    
         fetch('/execute_code/', {
             method: 'POST',
             headers: {
@@ -107,6 +114,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.status === 'success') {
                 const result = data.result;
                 displayResult(result);
+                if (data.metadata) {
+                    updateMetadataDisplay(data.metadata);
+                }
                 const event = new CustomEvent('codeExecuted', { detail: { command: commandTextDisplay.textContent, code: code } });
                 document.dispatchEvent(event);
             } else {
@@ -118,6 +128,38 @@ document.addEventListener('DOMContentLoaded', function() {
             toastr.error(`Error: ${error}`);
         });
     });
+    
+    function updateMetadataDisplay(metadata) {
+        // Update data types table
+        dtypesKeysRow.innerHTML = '';
+        dtypesValuesRow.innerHTML = '';
+        Object.keys(metadata.dtypes).forEach(key => {
+            dtypesKeysRow.innerHTML += `<th>${key}</th>`;
+        });
+        Object.values(metadata.dtypes).forEach(value => {
+            dtypesValuesRow.innerHTML += `<td>${value}</td>`;
+        });
+    
+        // Update sample rows table
+        let tableHTML = '<table class="table table-striped"><thead><tr>';
+        if (metadata.sample_rows.length > 0) {
+            Object.keys(metadata.sample_rows[0]).forEach(col => {
+                tableHTML += `<th>${col}</th>`;
+            });
+            tableHTML += '</tr></thead><tbody>';
+            metadata.sample_rows.forEach(row => {
+                tableHTML += '<tr>';
+                Object.values(row).forEach(value => {
+                    tableHTML += `<td>${value}</td>`;
+                });
+                tableHTML += '</tr>';
+            });
+            tableHTML += '</tbody></table>';
+            sampleRowsDiv.innerHTML = tableHTML;
+            metadataDiv.classList.remove('d-none');
+        }
+    }
+    
 
     function displayResult(result) {
         const executionResult = document.getElementById('execution-result');

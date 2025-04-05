@@ -9,6 +9,8 @@ import base64
 import io
 import json
 import matplotlib
+
+from interpreter_app.helpers import update_metadata
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
@@ -20,7 +22,7 @@ import plotly.io as pio
 
 import requests
 
-API_URL = "http://10.32.15.90:6000"
+API_URL = "http://10.32.15.88:6000"
 
 df_store = None
 metadata_store = {}
@@ -142,7 +144,7 @@ def generate_code(request):
 
 @csrf_exempt
 def execute_code(request):
-    global df_store
+    global df_store, metadata_store
     if request.method == 'POST':
         if df_store is None:
             return JsonResponse({'status': 'error', 'message': 'No data uploaded yet.'}, status=400)
@@ -192,8 +194,12 @@ def execute_code(request):
             }, status=200)
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': f"Error: {str(e)}."}, status=200)
+
+        # Update the stored DataFrame and metadata if 'df' is modified
         if 'df' in allowed_locals and isinstance(allowed_locals['df'], pd.DataFrame):
             df_store = allowed_locals['df']
+            metadata_store = update_metadata(df_store)  # update metadata
+
         output_items = []
         collected_ids = set()
         def convert_and_add(obj):
@@ -226,7 +232,8 @@ def execute_code(request):
             'result': {
                 'type': 'multi',
                 'data': output_items
-            }
+            },
+            'metadata': metadata_store  # include updated metadata in response
         })
     return JsonResponse({'status': 'error', 'message': 'Invalid request'}, status=400)
 
