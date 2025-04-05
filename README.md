@@ -55,37 +55,38 @@ A full-stack web application that transforms natural language commands into exec
 ## 🌐 Core Workflow
 
  ```mermaid
- graph TD
-    A[User Uploads Data File] --> B[Initialize DataFrame]
-    B --> C[User Provides Command]
-    C -->|Voice Input| D[Record Audio]
-    C -->|Text Input| E[Direct Command]
-    D --> F[Transcribe to Text]
-    E --> G[Generate Pandas Code]
-    F --> G
+graph TD
+    A[User] --> B[Upload File]
+    B --> C{Valid?}
+    C -->|Yes| D[Store Data & Metadata]
+    C -->|No| E(Error)
     
-    G --> H{Response Type?}
-    H -->|Audio Chat| I[Play Voice Response]
-    H -->|Code| J[Display Generated Code]
+    A --> F[Command Input]
+    F -->|Text| G(Process Text)
+    F -->|Voice| H[Record Audio]
+    H --> I{{External API}}-.Transcribe.->G
     
-    J --> K[Execute Code]
-    K --> L{Output Detection}
-    L --> M[Text Output]
-    L --> N[Data Table]
-    L --> O[Matplotlib Plot]
-    L --> P[Plotly Figure]
+    G --> J{{External API}}-.Generate Code.->K
+    K[Display Code] --> L[Execute]
+    L --> M{Safe?}
+    M -->|Yes| N[Run in Sandbox]
+    M -->|No| E
+    N --> O[Capture Output]
+    O --> P[Update Data/Display]
+    P --> Q[Plotly]
+    P --> U[SNS]
+    P --> V[PLT]
+    P --> W[Dataframe]
+    P --> X[Text/Numerical]
+    Q --> T[Save History]
+    U --> T[Save History]
+    V --> T[Save History]
+    W --> T[Save History]
+    X --> T[Save History]
     
-    style A fill:#4CAF50,stroke:#388E3C
-    style G fill:#9C27B0,stroke:#7B1FA2
-    style I fill:#FF5722,stroke:#E64A19
-    style J fill:#3F51B5,stroke:#303F9F
-    style M fill:#607D8B,stroke:#455A64
-    style N fill:#795548,stroke:#5D4037
-    style O fill:#2196F3,stroke:#1976D2
-    style P fill:#009688,stroke:#00796B
-
-    classDef outputTypes fill:#fff,stroke:#666,stroke-width:2px
-    class M,N,O,P outputTypes
+    J{{External API}}-.Generate Chat answer.->R
+    R[Display Message] --> S[Play message]
+    style E fill:#f44336,stroke:#d32f2f
 ```
 
 ### 🗂 Core Project Files
