@@ -30,6 +30,7 @@ metadata_store = {}
 def index(request):
     if 'history' not in request.session:
         request.session['history'] = []
+    request.session['chat_history'] = []
     return render(request, 'interpreter_app/index.html')
 
 @csrf_exempt
